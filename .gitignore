@@ -1,0 +1,9 @@
+/venv
+*.log
+.DS_Store
+*.zip
+Temp_Notes.md
+Release_Notes.txt
+XIQ-Delete-Users*
+~*.docx
+/Archive
