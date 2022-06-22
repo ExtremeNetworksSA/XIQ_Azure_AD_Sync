@@ -14,7 +14,7 @@ import logging
 
 
 # Global Variables - ADD CORRECT VALUES
-tennant_id = 'Azure Directory (tenant) ID'
+tenant_id = 'Azure Directory (tenant) ID'
 client_id = 'Azure Application (client) ID'
 client_secret = 'Azure Client Secret'
 
@@ -88,40 +88,8 @@ def getADAccessToken(client_id,client_secret):
         logging.error(log_msg)
         raise TypeError(log_msg)
 
-def getAdGroupId(ad_group_name):
-    url = azure_base_url
-    checkForGroups = True
 
-    while checkForGroups:
-        response = requests.get(url, headers=azure_headers, verify= True)
-        if response is None:
-            log_msg = ("Error retrieving Azure AD Groups - no response!")
-            raise TypeError(log_msg)
-
-        elif response.status_code != 200:
-            log_msg = (f"Error retrieving Azure AD Groups - HTTP Status Code: {str(response.status_code)}")
-            raise TypeError(log_msg)
-        
-        rawData = response.json()
-        for group in rawData['value']:
-            if ad_group_name == group['displayName']:
-                return group['id']
-
-        if '@odata.nextLink' in rawData:
-            url = rawData['@odata.nextLink']
-        else:
-            log_msg = f"Group {ad_group_name} was not found in Azure AD"
-            raise TypeError(log_msg)
-        
-def retrieveADUsers(ad_group_name):
-    try:
-        ad_group_id = getAdGroupId(ad_group_name)
-    except TypeError as e:
-        raise TypeError(e)
-    except:
-        log_msg = "Unknown Error retrieving AD groups!"
-        raise TypeError(log_msg)
-
+def retrieveADUsers(ad_group_id):
     url = f"{azure_base_url}/{ad_group_id}/members?$select=displayName,accountEnabled,mail,userPrincipalName,id"
     adUsers = []
 
@@ -131,10 +99,13 @@ def retrieveADUsers(ad_group_name):
         response = requests.get(url, headers=azure_headers, verify= True)
         if response is None:
             log_msg = ("Error retrieving Azure AD users - no response!")
+            logging.error(log_msg)
             raise TypeError(log_msg)
 
         elif response.status_code != 200:
             log_msg = (f"Error retrieving Azure AD users - HTTP Status Code: {str(response.status_code)}")
+            logging.error(log_msg)
+            logging.warning(f"{response.text}")
             raise TypeError(log_msg)
 
         rawData = response.json()
@@ -148,8 +119,6 @@ def retrieveADUsers(ad_group_name):
         print(f"completed page of AD Users. Total Users collected is {len(adUsers)}")
     
     return adUsers
-
-    
 
 
 def getAccessToken(XIQ_username, XIQ_password):
@@ -201,8 +170,6 @@ def createPPSKuser(name,mail, usergroupID):
         return True
 
 
-
-
 def retrievePPSKUsers(pageSize, usergroupID):
     page = 1
     pageCount = 1
@@ -234,7 +201,6 @@ def retrievePPSKUsers(pageSize, usergroupID):
         print(f"completed page {page} of {rawList['total_pages']} collecting PPSK Users")
         page = rawList['page'] + 1 
     return ppskUsers
-
 
 
 def deleteUser(userId):
@@ -277,6 +243,7 @@ def addUserToPcg(policy_id, name, email, user_group_name):
     elif response.status_code == 202:
         return 'Success'
 
+
 def retrievePCGUsers(policy_id):
     url = xiq_base_url + "/pcgs/key-based/network-policy-" + str(policy_id) + "/users"
     response = requests.get(url, headers=xiq_headers, verify = True)
@@ -291,6 +258,7 @@ def retrievePCGUsers(policy_id):
         raise TypeError(log_msg)
     rawList = response.json()
     return rawList
+
 
 def deletePCGUsers(policy_id, userId):
     url = xiq_base_url + "/pcgs/key-based/network-policy-" + str(policy_id) + "/users"
@@ -311,6 +279,7 @@ def deletePCGUsers(policy_id, userId):
         raise TypeError(log_msg)
     elif response.status_code == 202:
         return 'Success'
+
 
 
 def main():
@@ -352,13 +321,26 @@ def main():
     print(f"{log_msg}\n")
 
     # Generate Azure AD token
-    getADAccessToken(client_id,client_secret)
+    try:
+        getADAccessToken(client_id,client_secret)
+    except TypeError as e:
+        log_msg = f"Failed to Authenticate with Axure AD - {e}"
+        logging.error(log_msg)
+        print(log_msg)
+        print("script is exiting....")
+        raise SystemExit
+    except:
+        log_msg = "Failed to Authenticate with Azure AD - Unknown reason"
+        logging.error(log_msg)
+        print(log_msg)
+        print("script is exiting....")
+        raise SystemExit
     # Collect Azure AD Users
     ad_users = {}
     ad_capture_success = True
-    for ad_group_name,xiq_user_role in group_roles:
+    for ad_group_id,xiq_user_role in group_roles:
         try:
-            ad_results = retrieveADUsers(ad_group_name)
+            ad_results = retrieveADUsers(ad_group_id)
         except TypeError as e:
             print(e)
             print("script exiting....")
@@ -397,7 +379,7 @@ def main():
     ad_disabled = []
     for name, details in ad_users.items():
         user_created = False
-        if details['email'] == '[]':
+        if details['email'] == None:
             log_msg = (f"User {name} doesn't have an email set and will not be created in xiq")
             logging.warning(log_msg)
             print(log_msg)

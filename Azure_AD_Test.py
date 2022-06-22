@@ -11,10 +11,10 @@ import sys
 ####################################
 
 # Global Variables - ADD CORRECT VALUES
-tennant_id = 'Azure Directory (tenant) ID'
+tenant_id = 'Azure Directory (tenant) ID'
 client_id = 'Azure Application (client) ID'
 client_secret = 'Azure Client Secret'
-ad_group_name = 'AD Group Name'
+ad_group_id = 'AD Group ID'
 
 
 
@@ -22,7 +22,7 @@ azure_base_url = "https://graph.microsoft.com/v1.0/groups"
 azure_headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
 def getADAccessToken(client_id,client_secret):
-    url = f"https://login.microsoftonline.com/{tennant_id}/oauth2/v2.0/token"
+    url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
     payload = f'''
         client_id={client_id}
         &scope=https%3A%2F%2Fgraph.microsoft.com%2F.default
@@ -44,41 +44,7 @@ def getADAccessToken(client_id,client_secret):
     else:
         print("Unknown Error: Unable to gain access token for Azure AD")
 
-def getAdGroupId(ad_group_name):
-    url = azure_base_url
-    checkForGroups = True
-
-    while checkForGroups:
-        response = requests.get(url, headers=azure_headers, verify= True)
-        if response is None:
-            log_msg = ("Error retrieving Azure AD Groups - no response!")
-            raise TypeError(log_msg)
-
-        elif response.status_code != 200:
-            log_msg = (f"Error retrieving Azure AD Groups - HTTP Status Code: {str(response.status_code)}")
-            raise TypeError(log_msg)
-        
-        rawData = response.json()
-        for group in rawData['value']:
-            if ad_group_name == group['displayName']:
-                return group['id']
-
-        if '@odata.nextLink' in rawData:
-            url = rawData['@odata.nextLink']
-        else:
-            log_msg = f"Group {ad_group_name} was not found in Azure AD"
-            raise TypeError(log_msg)
-        
-
-def retrieveADUsers(ad_group_name):
-    try:
-        ad_group_id = getAdGroupId(ad_group_name)
-    except TypeError as e:
-        raise TypeError(e)
-    except:
-        log_msg = "Unknown Error retrieving AD groups!"
-        raise TypeError(log_msg)
-
+def retrieveADUsers(ad_group_id):
     url = f"{azure_base_url}/{ad_group_id}/members?$select=displayName,accountEnabled,mail,userPrincipalName,id"
     adUsers = []
 
@@ -111,7 +77,7 @@ def main():
     ad_users = {}
     getADAccessToken(client_id,client_secret)
     try:
-        ad_results = retrieveADUsers(ad_group_name)
+        ad_results = retrieveADUsers(ad_group_id)
     except TypeError as e:
         print(e)
         print("script exiting....")
