@@ -60,7 +60,7 @@ azure_base_url = "https://graph.microsoft.com/v1.0/groups"
 azure_headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
 def getADAccessToken(client_id,client_secret):
-    url = f"https://login.microsoftonline.com/{tennant_id}/oauth2/v2.0/token"
+    url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
     payload = f'''
         client_id={client_id}
         &scope=https%3A%2F%2Fgraph.microsoft.com%2F.default
