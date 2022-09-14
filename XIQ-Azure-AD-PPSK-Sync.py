@@ -26,9 +26,9 @@ client_secret = 'Azure Client Secret'
 XIQ_token = "****"
 
 group_roles = [
-    # AD GROUP Name, XIQ group ID
-    ("AD Group Name", "XIQ User Group ID"),
-    ("AD Group Name", "XIQ User Group ID")
+    # AD GROUP Object ID, XIQ group ID
+    ("AD Group Object ID", "XIQ User Group ID"),
+    ("AD Group Object ID", "XIQ User Group ID")
 ]
 
 PCG_Enable = False
