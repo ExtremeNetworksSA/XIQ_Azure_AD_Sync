@@ -8,8 +8,8 @@ import logging
 ####################################
 # written by:   Tim Smith
 # e-mail:       tismith@extremenetworks.com
-# date:         15 June 2022
-# version:      1.0.0
+# date:         6 April 2023
+# version:      1.1.0
 ####################################
 
 
@@ -90,7 +90,7 @@ def getADAccessToken(client_id,client_secret):
 
 
 def retrieveADUsers(ad_group_id):
-    url = f"{azure_base_url}/{ad_group_id}/members?$select=displayName,accountEnabled,mail,userPrincipalName,id"
+    url = f"{azure_base_url}/{ad_group_id}/transitiveMembers?$select=displayName,accountEnabled,mail,userPrincipalName,id"
     adUsers = []
 
     checkForUsers = True
@@ -352,6 +352,9 @@ def main():
             raise SystemExit
 
         for ad_entry in ad_results:
+            if ad_entry['@odata.type'] == '#microsoft.graph.group':
+                logging.info(f"Found {ad_entry['displayName']} as a nested group. Skipping entry")
+                continue
             if ad_entry['displayName'] not in ad_users:
                 try:
                     ad_users[ad_entry['displayName']] = {
@@ -361,7 +364,7 @@ def main():
                         "xiq_role": xiq_user_role
                     }
                 except:
-                    log_msg = (f"Unexpected error: {sys.exc_info()[0]}")
+                    log_msg = (f"Unexpected error: {sys.exc_info()}")
                     print(log_msg)
                     ad_capture_success = False
                     continue

@@ -6,8 +6,8 @@ import sys
 ####################################
 # written by:   Tim Smith
 # e-mail:       tismith@extremenetworks.com
-# date:         14 June 2022
-# version:      1.0.0
+# date:         6 April 2023
+# version:      1.1.0
 ####################################
 
 # Global Variables - ADD CORRECT VALUES
@@ -45,7 +45,7 @@ def getADAccessToken(client_id,client_secret):
         print("Unknown Error: Unable to gain access token for Azure AD")
 
 def retrieveADUsers(ad_group_id):
-    url = f"{azure_base_url}/{ad_group_id}/members?$select=displayName,accountEnabled,mail,userPrincipalName,id"
+    url = f"{azure_base_url}/{ad_group_id}/transitiveMembers?$select=displayName,accountEnabled,mail,userPrincipalName,id"
     adUsers = []
 
     checkForUsers = True
@@ -88,6 +88,9 @@ def main():
         print("script exiting....")
         raise SystemExit
     for ad_entry in ad_results:
+        if ad_entry['@odata.type'] == '#microsoft.graph.group':
+            print(f"Found {ad_entry['displayName']} group nested as one of the entries.")
+            continue
         if ad_entry['displayName'] not in ad_users:
             try:
                 ad_users[ad_entry['displayName']] = {
@@ -96,7 +99,7 @@ def main():
                     "username": ad_entry['userPrincipalName']
                 }
             except:
-                log_msg = (f"Unexpected error: {sys.exc_info()[0]}")
+                log_msg = (f"Unexpected error: {sys.exc_info()}")
                 print(log_msg)
                 ldap_capture_success = False
                 continue
