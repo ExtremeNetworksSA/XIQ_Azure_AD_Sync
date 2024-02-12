@@ -8,8 +8,8 @@ import logging
 ####################################
 # written by:   Tim Smith
 # e-mail:       tismith@extremenetworks.com
-# date:         6 April 2023
-# version:      1.1.0
+# date:         12 February 2024
+# version:      1.1.1
 ####################################
 
 
