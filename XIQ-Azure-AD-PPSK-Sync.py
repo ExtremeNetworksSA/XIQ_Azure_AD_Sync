@@ -423,7 +423,6 @@ def main():
                     log_msg = f"User {name} - was successfully add to pcg {policy_name}."
                     logging.info(log_msg)
                     print(log_msg)
-                    pcg_create_error+=1
 
         elif details['accountEnabled'] == False:
             ad_disabled.append(name)
