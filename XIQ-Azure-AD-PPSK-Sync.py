@@ -8,8 +8,8 @@ import logging
 ####################################
 # written by:   Tim Smith
 # e-mail:       tismith@extremenetworks.com
-# date:         3 Oct 2024
-# version:      1.1.2
+# date:         22 Oct 2024
+# version:      1.2.0
 ####################################
 
 
@@ -41,7 +41,7 @@ PCG_Maping = {
     }
 }
 
-
+extended_username_format = False
 
 #-------------------------
 # logging
@@ -355,9 +355,13 @@ def main():
             if ad_entry['@odata.type'] == '#microsoft.graph.group':
                 logging.info(f"Found {ad_entry['displayName']} as a nested group. Skipping entry")
                 continue
-            if ad_entry['displayName'] not in ad_users:
+            if extended_username_format:
+                username = f"{ad_entry['displayName']}_{ad_entry['mail']}"
+            else:
+                username = ad_entry['displayName']
+            if username not in ad_users:
                 try:
-                    ad_users[ad_entry['displayName']] = {
+                    ad_users[username] = {
                         "accountEnabled": ad_entry['accountEnabled'],
                         "email": ad_entry['mail'],
                         "username": ad_entry['userPrincipalName'],
@@ -461,8 +465,9 @@ def main():
             user_group_id = x['user_group_id']
             email = x['email_address']
             xiq_id = x['id']
+            username = x['user_name']
             # check if any xiq user is not included in active ad users
-            if not any(d['email'] == email for d in ad_users.values()):
+            if not any(d == username for d in ad_users):
                 if PCG_Enable == True and str(user_group_id) in PCG_Maping:
                     if pcg_capture_success == False:
                         log_msg = f"Due to PCG read failure, user {email} cannot be deleted"
@@ -473,9 +478,9 @@ def main():
                         continue
                 # not having ppsk will break later line - if not any(d['name'] == name for d in ppsk_users):
                     # If PCG is Enabled, Users need to be deleted from PCG group before they can be deleted from User Group
-                    if any(d['email'] == email for d in PCGUsers):
+                    if any(d['name'] == username for d in PCGUsers):
                         # Find specific PCG user and get the user id
-                        PCGUser = (list(filter(lambda PCGUser: PCGUser['email'] == email, PCGUsers)))[0]
+                        PCGUser = (list(filter(lambda PCGUser: PCGUser['name'] == username, PCGUsers)))[0]
                         pcg_id = PCGUser['id']
                         for PCG_Map in PCG_Maping.values():
                             if PCG_Map['UserGroupName'] == PCGUser['user_group_name']:
@@ -485,25 +490,25 @@ def main():
                         try:
                             result = deletePCGUsers(policy_id, pcg_id)
                         except TypeError as e:
-                            logmsg = f"Failed to delete user {email} from PCG group {policy_name} with error {e}"
+                            logmsg = f"Failed to delete user {username} from PCG group {policy_name} with error {e}"
                             logging.error(logmsg)
                             print(logmsg)
                             ppsk_del_error+=1
                             pcg_del_error+=1
                             continue
                         except:
-                            log_msg = f"Unknown Error: Failed to delete user {email} from pcg group {policy_name}"
+                            log_msg = f"Unknown Error: Failed to delete user {username} from pcg group {policy_name}"
                             logging.error(log_msg)
                             print(log_msg)
                             ppsk_del_error+=1
                             pcg_del_error+=1
                             continue
                         if result == 'Success':
-                            log_msg = f"User {email} - {pcg_id} was successfully deleted from pcg group {policy_name}."
+                            log_msg = f"User {username} - {pcg_id} was successfully deleted from pcg group {policy_name}."
                             logging.info(log_msg)
                             print(log_msg)
                         else:
-                            log_msg = f"User {email} - {pcg_id} was not successfully deleted from pcg group {policy_name}. User cannot be deleted from the PPSK Group."
+                            log_msg = f"User {username} - {pcg_id} was not successfully deleted from pcg group {policy_name}. User cannot be deleted from the PPSK Group."
                             logging.info(log_msg)
                             print(log_msg)
                             ppsk_del_error+=1
@@ -513,23 +518,23 @@ def main():
                 try:
                     result, userid = deleteUser(xiq_id)
                 except TypeError as e:
-                    logmsg = f"Failed to delete user {email}  with error {e}"
+                    logmsg = f"Failed to delete user {username}  with error {e}"
                     logging.error(logmsg)
                     print(logmsg)
                     ppsk_del_error+=1
                     continue
                 except:
-                    log_msg = f"Unknown Error: Failed to delete user {email} "
+                    log_msg = f"Unknown Error: Failed to delete user {username} "
                     logging.error(log_msg)
                     print(log_msg)
                     ppsk_del_error+=1
                     continue
                 if result == 'Success':
-                    log_msg = f"User {email} - {userid} was successfully deleted."
+                    log_msg = f"User {username} - {userid} was successfully deleted."
                     logging.info(log_msg)
                     print(log_msg)
                 else:
-                    log_msg = f"User {email} - {userid} did not successfully delete from the PPSK Group."
+                    log_msg = f"User {username} - {userid} did not successfully delete from the PPSK Group."
                     logging.info(log_msg)
                     print(log_msg)
                     ppsk_del_error+=1
