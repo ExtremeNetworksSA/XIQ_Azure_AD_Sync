@@ -26,7 +26,7 @@ pageSize = 100
 #XIQ_username = "enter your ExtremeCloudIQ Username"
 #XIQ_password = "enter your ExtremeCLoudIQ password"
 ####OR###
-## TOKEN permission needs - enduser, pcg:key
+## TOKEN permission needs - enduser, pcg:key, lro
 XIQ_token = "****"
 
 group_roles = [
